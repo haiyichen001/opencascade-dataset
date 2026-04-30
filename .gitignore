@@ -1,0 +1,8 @@
+step/
+stl/
+ply/
+npy/
+png/
+_libs/
+__pycache__/
+*.pyc
