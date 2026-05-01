@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Surface Fitting Viewer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;overflow:hidden;font-family:Arial}
+#toolbar{position:fixed;top:35px;right:8px;z-index:100;display:flex;gap:8px;align-items:center}
+#toolbar select,#toolbar button{padding:6px 12px;font-size:13px;background:#1a1a1a;color:#ccc;border:1px solid #444;border-radius:4px;cursor:pointer}
+#toolbar select:hover,#toolbar button:hover{background:#2a2a2a;color:#fff}
+#info{position:fixed;bottom:8px;left:8px;color:#666;font-size:11px;z-index:100}
+#legend{position:fixed;top:35px;left:8px;color:#ccc;font-size:12px;z-index:100;display:flex;flex-direction:column;gap:4px}
+#legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+#loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:16px;z-index:200;display:none}
+</style>
+</head>
+<body>
+<div id="navbar" style="position:fixed;top:0;left:0;right:0;z-index:200;display:flex;gap:0;background:#111;border-bottom:1px solid #333">
+  <a href="/" style="padding:8px 16px;color:#ccc;text-decoration:none;font-size:13px">Compare</a>
+  <a href="/fit" style="padding:8px 16px;color:#4db8ff;text-decoration:none;font-size:13px;background:#1a1a1a">Fit</a>
+</div>
+<div id="toolbar">
+  <select id="partSelect"></select>
+  <button id="btnReload">Reload</button>
+</div>
+<div id="legend">
+  <span><span class="dot" style="background:#33ff4d"></span> Point Cloud</span>
+  <span><span class="dot" style="background:rgba(0,255,100,0.3)"></span> Plane (1st)</span>
+  <span><span class="dot" style="background:rgba(68,170,255,0.3)"></span> Cylinder (2nd)</span>
+  <span><span class="dot" style="background:rgba(255,136,68,0.3)"></span> Sphere (2nd)</span>
+  <span><span class="dot" style="background:rgba(0,255,170,0.4)"></span> Intersection Lines</span>
+</div>
+<div id="info"></div>
+<div id="loading">Loading...</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const BASE = '';
+let scene, renderer, cam, ctrl, group;
+
+function initScene() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a0a);
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(w,h); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  document.body.appendChild(renderer.domElement);
+  cam = new THREE.PerspectiveCamera(35,w/h,0.001,1000);
+  cam.position.set(1,0.6,1.5); cam.up.set(0,0,1);
+  ctrl = new OrbitControls(cam, renderer.domElement);
+  ctrl.enableDamping = true; ctrl.dampingFactor = 0.12;
+  ctrl.target.set(0,0,0);
+  scene.add(new THREE.AmbientLight(0xffffff,4));
+  const d1 = new THREE.DirectionalLight(0xffffff,3); d1.position.set(1,1,1); scene.add(d1);
+  const d2 = new THREE.DirectionalLight(0xaaaaff,2); d2.position.set(-1,-0.5,-1); scene.add(d2);
+  group = new THREE.Group(); scene.add(group);
+  window.addEventListener('resize',()=>{
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    cam.aspect = window.innerWidth/window.innerHeight; cam.updateProjectionMatrix();
+  });
+}
+
+function clearGroup() {
+  while(group.children.length > 0) {
+    const c = group.children[0];
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) c.material.dispose();
+    group.remove(c);
+  }
+}
+
+function makeCylinder(axis, center, radius, span, bboxMin, bboxMax) {
+  const height = span * 2;
+  const geo = new THREE.CylinderGeometry(radius, radius, height, 64, 1, true);
+  const mat = new THREE.MeshPhongMaterial({
+    color:0x44aaff, side:THREE.DoubleSide, transparent:true, opacity:0.22,
+    specular:0x000000, shininess:0, depthWrite:false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(...center);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), new THREE.Vector3(...axis));
+  return mesh;
+}
+
+function makeSphere(center, radius) {
+  const geo = new THREE.SphereGeometry(radius, 48, 24);
+  const mat = new THREE.MeshPhongMaterial({
+    color:0xff8844, side:THREE.DoubleSide, transparent:true, opacity:0.18,
+    specular:0x000000, shininess:0, depthWrite:false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(...center);
+  return mesh;
+}
+
+function makeExtendedPlane(normal, d, span) {
+  const size = span * 2;
+  const planeGeo = new THREE.PlaneGeometry(size, size);
+  const planeMat = new THREE.MeshPhongMaterial({
+    color:0x00ff64, side:THREE.DoubleSide, transparent:true, opacity:0.22,
+    specular:0x000000, shininess:0, depthWrite:false,
+  });
+  const mesh = new THREE.Mesh(planeGeo, planeMat);
+  // 位置：平面上的一个点 = -d * normal
+  const center = new THREE.Vector3().copy(new THREE.Vector3(...normal)).multiplyScalar(-d);
+  mesh.position.copy(center);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(...normal));
+  return mesh;
+}
+
+async function load(part) {
+  document.getElementById('loading').style.display = 'block';
+  clearGroup();
+  try {
+    const r = await fetch(`${BASE}/api/fit/${part}`);
+    if (!r.ok) { console.error('Failed'); return; }
+    const d = await r.json();
+
+    // 点云
+    const ptGeo = new THREE.BufferGeometry();
+    ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(d.points.flat(),3));
+    const ptMat = new THREE.PointsMaterial({color:0x33ff4d, size:d.span*0.003, depthTest:true});
+    group.add(new THREE.Points(ptGeo, ptMat));
+
+    // 所有拟合面 - 无边界延伸
+    const planeColors = [0x00ff64, 0x33ff99, 0x66ff88, 0x00cc55, 0x44dd66, 0x22ee77, 0x55ffaa, 0x11dd55];
+    for (let i=0;i<d.surfaces.length;i++) {
+      const s = d.surfaces[i];
+      if (s.type === 'plane') {
+        const mesh = makeExtendedPlane(s.normal, s.d, d.span);
+        mesh.material.color.set(planeColors[i % planeColors.length]);
+        mesh.material.opacity = 0.18 + (i * 0.02);
+        group.add(mesh);
+      } else if (s.type === 'cylinder') {
+        const mesh = makeCylinder(s.axis, s.center, s.radius, d.span);
+        group.add(mesh);
+      } else if (s.type === 'sphere') {
+        const mesh = makeSphere(s.center, s.radius);
+        group.add(mesh);
+      }
+    }
+
+      cam.position.set(d.center[0]+d.span*0.6, d.center[1]+d.span*0.4, d.center[2]+d.span*0.7);
+    ctrl.target.set(...d.center); ctrl.update();
+
+    // 相交线
+    const lineGroup = new THREE.Group();
+    for (let i=0;i<d.surfaces.length;i++) {
+      for (let j=i+1;j<d.surfaces.length;j++) {
+        const a=d.surfaces[i], b=d.surfaces[j];
+        if (a.type!=='plane'||b.type!=='plane') continue;
+        const n1 = new THREE.Vector3(...a.normal), n2 = new THREE.Vector3(...b.normal);
+        const dir = new THREE.Vector3().crossVectors(n1, n2);
+        const dlen = dir.length();
+        if (dlen < 0.001) continue; // parallel
+        dir.normalize();
+        // 求交线上一点
+        const det = n1.x*n2.y - n1.y*n2.x;
+        let pt;
+        if (Math.abs(det) > 0.001) {
+          const x = (n2.y*(-a.d) - n1.y*(-b.d)) / det;
+          const y = (n1.x*(-b.d) - n2.x*(-a.d)) / det;
+          pt = new THREE.Vector3(x,y,0);
+        } else {
+          const det2 = n1.x*n2.z - n1.z*n2.x;
+          const x = (n2.z*(-a.d) - n1.z*(-b.d)) / det2;
+          const z = (n1.x*(-b.d) - n2.x*(-a.d)) / det2;
+          pt = new THREE.Vector3(x,0,z);
+        }
+        const len = d.span * 2;
+        const p1 = pt.clone().addScaledVector(dir, -len);
+        const p2 = pt.clone().addScaledVector(dir, len);
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute([p1.x,p1.y,p1.z, p2.x,p2.y,p2.z],3));
+        lineGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color:0x00ffaa, transparent:true, opacity:0.4, linewidth:1})));
+      }
+    }
+    group.add(lineGroup);
+
+    const pts_n = d.surfaces.reduce((a,s)=>a+s.n_points, 0);
+    document.getElementById('info').textContent = `${part} | ${d.surfaces.length} surfaces | ${pts_n} inlier pts`;
+  } catch(e) { console.error(e); }
+  document.getElementById('loading').style.display = 'none';
+}
+
+function animate() { requestAnimationFrame(animate); ctrl.update(); renderer.render(scene, cam); }
+
+async function init() {
+  initScene(); animate();
+  const r = await fetch(`${BASE}/api/parts`);
+  const parts = await r.json();
+  const sel = document.getElementById('partSelect');
+  parts.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o)});
+  const def = parts.find(p=>p.includes('HexagonNut'))||parts[0];
+  if(def) sel.value = def;
+  sel.addEventListener('change',()=>load(sel.value));
+  document.getElementById('btnReload').addEventListener('click',()=>load(sel.value));
+  await load(sel.value);
+}
+init();
+</script>
+</body>
+</html>

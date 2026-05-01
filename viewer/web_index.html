@@ -24,7 +24,12 @@ body{background:#0a0a0a;overflow:hidden;font-family:Arial}
   <div class="view" id="v2"><div class="label">Point Cloud (16384)</div></div>
   <div class="view" id="v3"><div class="label">Voxel (128³)</div></div>
 </div>
-<div id="toolbar">
+<div id="navbar" style="position:fixed;top:0;left:0;right:0;z-index:200;display:flex;gap:0;background:#111;border-bottom:1px solid #333">
+  <a href="/" style="padding:8px 16px;color:#4db8ff;text-decoration:none;font-size:13px;background:#1a1a1a">4-View</a>
+  <a href="/multi" style="padding:8px 16px;color:#ccc;text-decoration:none;font-size:13px">Multi</a>
+  <a href="/fit" style="padding:8px 16px;color:#ccc;text-decoration:none;font-size:13px">Fit</a>
+</div>
+<div id="toolbar" style="margin-top:35px">
   <select id="partSelect"></select>
   <button id="btnReload">重新加载</button>
 </div>

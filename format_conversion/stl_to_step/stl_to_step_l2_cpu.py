@@ -20,18 +20,30 @@ def process_one(step_path):
         return (stem, "skip")
 
     try:
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
+
         sr = STEPControl_Reader()
         if sr.ReadFile(step_path) != 1:
             return (stem, "read_fail")
         sr.TransferRoots()
         shape = sr.OneShape()
 
-        unifier = ShapeUpgrade_UnifySameDomain(shape, True, True, True)
-        unifier.Build()
-        unified = unifier.Shape()
+        # 2轮合并
+        for _ in range(2):
+            unifier = ShapeUpgrade_UnifySameDomain(shape, True, True, True)
+            unifier.SetSafeInputMode(False)
+            unifier.AllowInternalEdges(False)
+            unifier.SetAngularTolerance(0.035)
+            unifier.Build()
+            shape = unifier.Shape()
+
+        # NurbsConvert
+        nc = BRepBuilderAPI_NurbsConvert(shape, True)
+        nc.Perform(shape)
+        shape = nc.Shape()
 
         writer = STEPControl_Writer()
-        writer.Transfer(unified, STEPControl_AsIs)
+        writer.Transfer(shape, STEPControl_AsIs)
         writer.Write(out)
         return (stem, "ok")
     except Exception as e:
