@@ -48,15 +48,10 @@ conda activate occ
 
 # 正向生成
 python generate_step.py                                    # CadQuery 生成 STEP
-python generate/step_to_stl/step_to_stl_cpu.py    # STEP → STL
-python generate/stl_to_ply/stl_to_ply_cpu.py      # STL → PLY 65536点
-python generate/step_to_npy/step_to_npy_cpu.py    # STEP → NPY 体素
-python generate/step_to_png/step_to_png_cpu.py    # PNG 24视角
-
-# STL 逆向 STEP（L1 生产可用，L2/L3 实验性）
-python generate/stl_to_step/stl_to_step_l1_cpu.py  # L1: 三角缝合 (0.5%误差)
-python generate/stl_to_step/stl_to_step_l2_cpu.py  # L2: 共面合并 (40-82%面减少)
-python generate/stl_to_step/stl_to_step_l3_cpu.py  # L3: 曲面拟合 (实验)
+python generate/step_to_stl_cpu.py    # STEP → STL
+python generate/stl_to_ply_cpu.py      # STL → PLY 65536点
+python generate/step_to_npy_cpu.py    # STEP → NPY 体素
+python generate/step_to_png_cpu.py    # PNG 24视角
 ```
 
 全部 CPU 多进程（`cpu_count() - 1`）。
@@ -73,7 +68,7 @@ python generate/stl_to_step/stl_to_step_l3_cpu.py  # L3: 曲面拟合 (实验)
 
 `http://localhost:8005` — Flask + Three.js，三个功能 Tab。
 
-- **Compare** — 最多 7 种格式同屏对比（STEP/STL/点云/体素/逆向 L1/L2/L3），动态布局，双向联动
+- **Compare** — 多种格式同屏对比（STEP/STL/点云/体素），动态布局，双向联动
 - **Labels** — 面类型标注，每面按几何类型分色（平面=蓝/柱面=绿/锥面=橙），含图例和文字标签
 - 黑底 UI，零件下拉列表
 
