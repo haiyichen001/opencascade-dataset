@@ -1,0 +1,6 @@
+[submodule "_libs/cq_warehouse"]
+	path = _libs/cq_warehouse
+	url = https://github.com/gumyr/cq_warehouse.git
+[submodule "_libs/cq_gears"]
+	path = _libs/cq_gears
+	url = https://github.com/meadiode/cq_gears.git
