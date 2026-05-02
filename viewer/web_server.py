@@ -208,7 +208,7 @@ def api_stl(part):
 @app.route("/api/points/<part>")
 def api_points(part):
     """点云 → JSON"""
-    ply_path = DATA / "ply" / f"{part}_16384.ply"
+    ply_path = DATA / "ply" / f"{part}_65536.ply"
     if not ply_path.exists():
         return jsonify({"error": "PLY not found"}), 404
 
@@ -279,7 +279,7 @@ def api_voxels(part):
 @app.route("/api/fit/<part>")
 def api_fit(part):
     """点云曲面拟合 — 多次 RANSAC 提取所有平面+柱面，无限边界"""
-    ply_path = DATA / "ply" / f"{part}_16384.ply"
+    ply_path = DATA / "ply" / f"{part}_65536.ply"
     if not ply_path.exists():
         return jsonify({"error": "PLY not found"}), 404
 
@@ -393,6 +393,76 @@ def api_fit(part):
         "bbox_max": bbox_max,
         "surfaces": surfaces,
     })
+
+
+@app.route("/api/labels/<part>")
+def api_labels(part):
+    """STEP 面类型标注 — 每面单独 mesh + 类型标签"""
+    shape = get_shape(part)
+    if shape is None:
+        return jsonify({"error": "part not found"}), 404
+
+    from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
+    from OCC.Core.TopExp import TopExp_Explorer
+    from OCC.Core.TopAbs import TopAbs_FACE
+    from OCC.Core.TopLoc import TopLoc_Location
+    from OCC.Core.BRep import BRep_Tool
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import (GeomAbs_Plane, GeomAbs_Cylinder, GeomAbs_Cone,
+        GeomAbs_Sphere, GeomAbs_Torus, GeomAbs_BezierSurface, GeomAbs_BSplineSurface)
+    from OCC.Core.Bnd import Bnd_Box
+    from OCC.Core.BRepBndLib import brepbndlib
+
+    bbox = Bnd_Box(); brepbndlib.Add(shape, bbox)
+    x1,y1,z1,x2,y2,z2 = bbox.Get()
+    span = max(x2-x1, y2-y1, z2-z1)
+    BRepMesh_IncrementalMesh(shape, span / 100.0).Perform()
+
+    type_names = {GeomAbs_Plane: "Plane", GeomAbs_Cylinder: "Cylinder",
+        GeomAbs_Cone: "Cone", GeomAbs_Sphere: "Sphere", GeomAbs_Torus: "Torus",
+        GeomAbs_BezierSurface: "Bezier", GeomAbs_BSplineSurface: "BSpline"}
+    type_colors = {GeomAbs_Plane: "#4db8ff", GeomAbs_Cylinder: "#44cc44",
+        GeomAbs_Cone: "#ff8844", GeomAbs_Sphere: "#ff44ff", GeomAbs_Torus: "#ffcc00",
+        GeomAbs_BezierSurface: "#888888", GeomAbs_BSplineSurface: "#aaaaaa"}
+
+    faces_data = []
+    exp = TopExp_Explorer(shape, TopAbs_FACE)
+    while exp.More():
+        face = exp.Current()
+        adapt = BRepAdaptor_Surface(face, True)
+        st = adapt.GetType()
+        loc = TopLoc_Location()
+        tri = BRep_Tool().Triangulation(face, loc)
+        if tri is None: exp.Next(); continue
+        trsf = loc.Transformation()
+        nv = tri.NbNodes(); nt = tri.NbTriangles()
+        verts = []; tris_idx = []; vi = 0; local = {}
+        for i in range(1, nv+1):
+            p = tri.Node(i); p.Transform(trsf)
+            verts.extend([p.X(), p.Y(), p.Z()]); local[i] = vi; vi += 1
+        for i in range(1, nt+1):
+            t = tri.Triangle(i)
+            tris_idx.extend([local[t.Value(1)], local[t.Value(2)], local[t.Value(3)]])
+        # 面中心
+        cx = sum(verts[::3])/vi; cy = sum(verts[1::3])/vi; cz = sum(verts[2::3])/vi
+        faces_data.append({
+            "vertices": verts, "triangles": tris_idx,
+            "type": type_names.get(st, "Other"),
+            "color": type_colors.get(st, "#ffffff"),
+            "center": [cx, cy, cz],
+        })
+        exp.Next()
+
+    return jsonify({
+        "faces": faces_data,
+        "center": [(x1+x2)/2, (y1+y2)/2, (z1+z2)/2],
+        "span": span,
+    })
+
+
+@app.route("/labels")
+def labels_page():
+    return send_file(str(WEB_ROOT / "labels_viewer.html"))
 
 
 @app.route("/fit")

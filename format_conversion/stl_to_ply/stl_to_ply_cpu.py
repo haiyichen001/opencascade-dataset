@@ -1,4 +1,4 @@
-"""STL → 点云 PLY (16384点)"""
+"""STL → 点云 PLY (65536点)"""
 import os
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
@@ -19,11 +19,11 @@ def save_ply(pts, path):
 
 def process_one(stl_path_str):
     stem = Path(stl_path_str).stem
-    out = os.path.join(PLY_DIR, f"{stem}_16384.ply")
+    out = os.path.join(PLY_DIR, f"{stem}_65536.ply")
     if os.path.exists(out): return (stem, "skip")
     try:
         mesh = trimesh.load(stl_path_str)
-        pts = mesh.sample(16384)
+        pts = mesh.sample(65536)
         save_ply(pts, out)
         return (stem, "ok")
     except Exception as e:
@@ -31,7 +31,7 @@ def process_one(stl_path_str):
 
 if __name__ == "__main__":
     files = [str(f) for f in sorted(Path(STL_DIR).glob("*.stl"))
-             if not os.path.exists(os.path.join(PLY_DIR, f"{f.stem}_16384.ply"))]
+             if not os.path.exists(os.path.join(PLY_DIR, f"{f.stem}_65536.ply"))]
     print(f"STL: {len(list(Path(STL_DIR).glob('*.stl')))} total, {len(files)} to do")
 
     ok = fail = skip = 0
