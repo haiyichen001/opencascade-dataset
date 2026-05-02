@@ -100,7 +100,7 @@ if __name__ == "__main__":
     t0 = time.time()
     ok = fail = skip = 0
     with Pool(n) as p:
-        for stem, status in p.imap_unordered(process_one, todo, chunksize=10):
+        for stem, status in p.imap_unordered(process_one, todo, chunksize=1):
             if status == "ok":
                 ok += 1
             elif status == "skip":
