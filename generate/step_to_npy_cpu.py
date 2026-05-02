@@ -12,10 +12,11 @@ from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepBndLib import brepbndlib
 from OCC.Core.TopAbs import TopAbs_IN
 
-STEP_DIR = r"D:\opencascade-dataset\step"
-NPY_DIR = r"D:\opencascade-dataset\npy"
+ROOT = Path(__file__).parent.parent
+STEP_DIR = ROOT / "step"
+NPY_DIR = ROOT / "npy"
 os.makedirs(NPY_DIR, exist_ok=True)
-RES = 128
+RES = 64
 
 
 def process_one(step_path):

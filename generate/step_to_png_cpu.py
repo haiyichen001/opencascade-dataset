@@ -9,8 +9,9 @@ from OCC.Core.gp import gp_Dir
 from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
 from OCC.Display.OCCViewer import Viewer3d
 
-STEP_DIR = r"D:\opencascade-dataset\step"
-PNG_DIR = r"D:\opencascade-dataset\png"
+ROOT = Path(__file__).parent.parent
+STEP_DIR = ROOT / "step"
+PNG_DIR = ROOT / "png"
 os.makedirs(PNG_DIR, exist_ok=True)
 
 def fibonacci_sphere(n=24):

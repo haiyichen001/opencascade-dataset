@@ -10,3 +10,5 @@ step_reverse/
 step_reverse_l2/
 step_reverse_l3/
 scripts_reverse/
+releases/*.zip
+releases/

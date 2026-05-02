@@ -5,17 +5,20 @@ from multiprocessing import Pool, cpu_count
 import trimesh
 import numpy as np
 
-STL_DIR = r"D:\opencascade-dataset\stl"
-PLY_DIR = r"D:\opencascade-dataset\ply"
+ROOT = Path(__file__).parent.parent
+STL_DIR = ROOT / "stl"
+PLY_DIR = ROOT / "ply"
 os.makedirs(PLY_DIR, exist_ok=True)
 
 def save_ply(pts, path):
-    with open(path, 'w') as f:
-        f.write("ply\nformat ascii 1.0\n")
-        f.write(f"element vertex {len(pts)}\n")
-        f.write("property float x\nproperty float y\nproperty float z\nend_header\n")
+    # Binary PLY format, little-endian
+    import struct
+    n = len(pts)
+    header = f"ply\nformat binary_little_endian 1.0\nelement vertex {n}\nproperty float x\nproperty float y\nproperty float z\nend_header\n"
+    with open(path, 'wb') as f:
+        f.write(header.encode())
         for p in pts:
-            f.write(f"{p[0]} {p[1]} {p[2]}\n")
+            f.write(struct.pack('<fff', p[0], p[1], p[2]))
 
 def process_one(stl_path_str):
     stem = Path(stl_path_str).stem

@@ -94,6 +94,17 @@ python viewer/web_server.py
 - 尺寸严格对应 ISO 标准
 - 体素零近似（OCC 实体判点）
 
+## 引用
+
+```bibtex
+@dataset{OCCT-MechBench2026,
+  author = {haiyichen001},
+  title = {OCCT-MechBench: ISO Standard Mechanical Parts Dataset for AI Training},
+  year = {2026},
+  url = {https://github.com/haiyichen001/OCCT-MechBench}
+}
+```
+
 ## 许可
 
 MIT

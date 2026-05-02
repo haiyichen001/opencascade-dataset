@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from flask import Flask, jsonify, request, send_file
 
-DATA = Path(r"D:\opencascade-dataset")
+DATA = Path(__file__).parent.parent
 app = Flask(__name__)
 
 # ── 工具：单例加载 STEP shape ──
@@ -212,17 +212,22 @@ def api_points(part):
     if not ply_path.exists():
         return jsonify({"error": "PLY not found"}), 404
 
+    import struct
     pts = []
-    with open(ply_path) as f:
-        for line in f:
-            if line == "end_header\n":
+    with open(ply_path, 'rb') as f:
+        header = b''
+        while True:
+            line = f.readline()
+            header += line
+            if line.strip() == b'end_header':
                 break
-        for line in f:
-            parts = line.split()
-            if len(parts) >= 3:
-                pts.append([float(parts[0]), float(parts[1]), float(parts[2])])
+        # Binary data: 3 floats per point, little-endian
+        while True:
+            data = f.read(12)  # 3 * 4 bytes
+            if len(data) < 12: break
+            x, y, z = struct.unpack('<fff', data)
+            pts.append([x, y, z])
 
-    # 全部点
     arr = np.array(pts, dtype=np.float32)
     return jsonify({
         "points": arr.flatten().tolist(),
@@ -234,7 +239,7 @@ def api_points(part):
 @app.route("/api/voxels/<part>")
 def api_voxels(part):
     """体素 → JSON (表面体素)"""
-    npy_path = DATA / "npy" / f"{part}_128.npy"
+    npy_path = DATA / "npy" / f"{part}_64.npy"
     if not npy_path.exists():
         return jsonify({"error": "NPY not found"}), 404
 
@@ -283,16 +288,16 @@ def api_fit(part):
     if not ply_path.exists():
         return jsonify({"error": "PLY not found"}), 404
 
-    import numpy as np
+    import numpy as np, struct
 
     pts = []
-    with open(ply_path) as f:
-        for line in f:
-            if line == "end_header\n": break
-        for line in f:
-            parts = line.split()
-            if len(parts) >= 3:
-                pts.append([float(parts[0]), float(parts[1]), float(parts[2])])
+    with open(ply_path, 'rb') as f:
+        while True:
+            if f.readline().strip() == b'end_header': break
+        while True:
+            data = f.read(12)
+            if len(data) < 12: break
+            pts.append(list(struct.unpack('<fff', data)))
     arr = np.array(pts, dtype=np.float32)
     if len(arr) > 4096:
         step = len(arr) // 4096

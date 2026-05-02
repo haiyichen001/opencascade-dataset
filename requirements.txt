@@ -1,0 +1,8 @@
+numpy
+trimesh
+scipy
+cadquery
+cq-warehouse
+cq-gears
+flask
+pythonocc-core

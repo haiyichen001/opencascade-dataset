@@ -7,8 +7,9 @@ from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.StlAPI import StlAPI_Writer
 from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
 
-STEP_DIR = r"D:\opencascade-dataset\step"
-STL_DIR = r"D:\opencascade-dataset\stl"
+ROOT = Path(__file__).parent.parent
+STEP_DIR = ROOT / "step"
+STL_DIR = ROOT / "stl"
 os.makedirs(STL_DIR, exist_ok=True)
 
 DEFLECTION = 0.1  # 三角化精度 (mm)

@@ -8,7 +8,8 @@ from cq_warehouse.fastener import *
 from cq_warehouse.bearing import *
 from cq_gears import SpurGear, BevelGear, CrossedHelicalGear, RackGear, RingGear, Worm
 
-STEP_DIR = r"D:\opencascade-dataset\step"
+ROOT = Path(__file__).parent.parent
+STEP_DIR = ROOT / "step"
 os.makedirs(STEP_DIR, exist_ok=True)
 
 ISO_LENGTHS = [8,10,12,16,20,25,30,35,40,45,50,55,60,65,70,80,90,100,110,120,130,140,150,160,180,200]
