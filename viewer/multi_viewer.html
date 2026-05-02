@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>ISO-Mech 多格式查看器</title>
+<title>OCCT-MechBench Multi-Format Viewer</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a0a0a;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif}
@@ -29,16 +29,16 @@ body{background:#0a0a0a;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif}
   <a href="/labels" style="padding:8px 16px;color:#ccc;text-decoration:none;font-size:13px">Labels</a>
 </div>
 <div id="sidebar" style="margin-top:35px">
-  <h2>零件</h2>
+  <h2>Part</h2>
   <select id="partSelect"></select>
-  <button id="btnReload">重新加载</button>
-  <h2>显示格式</h2>
+  <button id="btnReload">Reload</button>
+  <h2>Formats</h2>
   <div id="formatList"></div>
 </div>
 <div id="main"></div>
 </div>
 <div id="info"></div>
-<div id="loading">加载中...</div>
+<div id="loading">Loading...</div>
 
 <script type="importmap">
 {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
