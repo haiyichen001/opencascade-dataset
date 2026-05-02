@@ -465,9 +465,6 @@ def labels_page():
     return send_file(str(WEB_ROOT / "labels_viewer.html"))
 
 
-@app.route("/fit")
-def fit_page():
-    return send_file(str(WEB_ROOT / "fit_viewer.html"))
 
 
 if __name__ == "__main__":

@@ -74,7 +74,6 @@ python format_conversion/stl_to_step/stl_to_step_l3_cpu.py  # L3: 曲面拟合 (
 `http://localhost:8005` — Flask + Three.js，三个功能 Tab。
 
 - **Compare** — 最多 7 种格式同屏对比（STEP/STL/点云/体素/逆向 L1/L2/L3），动态布局，双向联动
-- **Fit** — 曲面拟合可视化，半透明平面/柱面/球面叠加点云，显示面面交线
 - **Labels** — 面类型标注，每面按几何类型分色（平面=蓝/柱面=绿/锥面=橙），含图例和文字标签
 - 黑底 UI，零件下拉列表
 
