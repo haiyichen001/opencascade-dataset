@@ -16,8 +16,8 @@ body{background:#0a0a0a;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif}
 #sidebar button:hover{background:#2a2a2a;color:#fff}
 #main{flex:1;position:relative}
 .view{position:absolute;border:1px solid #222;overflow:hidden}
-.view canvas{display:block}
-.view .label{position:absolute;top:4px;left:4px;color:#fff;font-size:11px;font-weight:bold;padding:3px 8px;background:rgba(0,0,0,0.7);border-radius:3px;z-index:10;pointer-events:none}
+.view canvas{display:block;position:absolute;top:0;left:0;z-index:0}
+.label{position:absolute;top:4px;left:4px;color:#fff;font-size:12px;font-weight:bold;padding:4px 10px;background:rgba(0,0,0,0.9);border-radius:3px;z-index:1000;pointer-events:none}
 #info{position:fixed;bottom:4px;left:4px;color:#555;font-size:11px;z-index:100}
 #loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:16px;z-index:200;display:none}
 </style>
@@ -109,6 +109,10 @@ function layout() {
     el.style.top = (p.y*H)+'px';
     el.style.width = (p.w*W)+'px';
     el.style.height = (p.h*H)+'px';
+    if (el._label) {
+      el._label.style.left = (p.x*W + 6)+'px';
+      el._label.style.top = (p.y*H + 35)+'px';
+    }
     renderers[i].setSize(p.w*W, p.h*H);
     views[i].cam.aspect = (p.w*W)/(p.h*H);
     views[i].cam.updateProjectionMatrix();
@@ -120,8 +124,15 @@ function createView(i, format) {
   const el = document.createElement('div');
   el.className = 'view';
   el.id = 'v'+i;
-  el.innerHTML = `<div class="label">${format.label}</div>`;
   main.appendChild(el);
+  const lb = document.createElement('div');
+  lb.className = 'label';
+  lb.textContent = format.label;
+  lb.style.position = 'absolute';
+  lb.style.zIndex = '1000';
+  lb.style.pointerEvents = 'none';
+  main.appendChild(lb);
+  el._label = lb;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a0a);
@@ -129,6 +140,10 @@ function createView(i, format) {
 
   const renderer = new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.domElement.style.position = 'absolute';
+  renderer.domElement.style.top = '0';
+  renderer.domElement.style.left = '0';
+  renderer.domElement.style.zIndex = '0';
   el.appendChild(renderer.domElement);
   renderers[i] = renderer;
 
@@ -243,6 +258,7 @@ function fitAll() {
 
 function rebuildViews() {
   const main = document.getElementById('main');
+  document.querySelectorAll('.label').forEach(l=>l.remove());
   main.innerHTML = '';
   for (let i=0;i<views.length;i++) {
     if (renderers[i]) renderers[i].dispose();

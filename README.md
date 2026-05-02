@@ -67,6 +67,9 @@ Directly from STEP B-Rep solids without STL intermediate:
 
 `http://localhost:8005` — Flask + Three.js, two tabs.
 
+![Compare View](viewer/compare-preview1.jpg)
+![Labels View](viewer/labels-preview.jpg)
+
 - **Compare** — Multi-format side-by-side (STEP/STL/point cloud/voxel), dynamic layout, synchronized rotation
 - **Labels** — Face-type annotations, color-coded by geometry type (Plane=blue, Cylinder=green, Cone=orange), with legend and labels
 
