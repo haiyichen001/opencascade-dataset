@@ -1,4 +1,4 @@
-# ISO-Mech
+# OCCT-MechBench
 
 ISO 标准机械零件数据集。2,372 个 STEP B-Rep 实体，5 种 3D 格式，面向 AI 训练。所有尺寸严格对应 ISO 标准长度系列。
 
