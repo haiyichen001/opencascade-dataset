@@ -67,7 +67,7 @@ Directly from STEP B-Rep solids without STL intermediate:
 
 `http://localhost:8005` — Flask + Three.js, two tabs.
 
-![Compare View](viewer/compare-preview1.jpg)
+![Compare View](viewer/compare-preview.jpg)
 ![Labels View](viewer/labels-preview.jpg)
 
 - **Compare** — Multi-format side-by-side (STEP/STL/point cloud/voxel), dynamic layout, synchronized rotation
