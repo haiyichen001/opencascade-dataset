@@ -246,12 +246,29 @@ def api_voxels(part):
     arr = np.load(str(npy_path)).astype(bool)
     R = arr.shape[0]
 
-    # 加载 STEP 算 bbox
+    # 用 tessellation 顶点算紧贴 bbox
     shape = get_shape(part)
-    from OCC.Core.Bnd import Bnd_Box
-    from OCC.Core.BRepBndLib import brepbndlib
-    bbox = Bnd_Box(); brepbndlib.Add(shape, bbox)
-    x1, y1, z1, x2, y2, z2 = bbox.Get()
+    from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
+    from OCC.Core.TopExp import TopExp_Explorer
+    from OCC.Core.TopAbs import TopAbs_FACE
+    from OCC.Core.TopLoc import TopLoc_Location
+    from OCC.Core.BRep import BRep_Tool
+    BRepMesh_IncrementalMesh(shape, 1.0).Perform()
+    x1 = y1 = z1 = float('inf'); x2 = y2 = z2 = float('-inf')
+    exp = TopExp_Explorer(shape, TopAbs_FACE)
+    while exp.More():
+        face = exp.Current()
+        loc = TopLoc_Location()
+        tri = BRep_Tool().Triangulation(face, loc)
+        if tri is None: exp.Next(); continue
+        trsf = loc.Transformation()
+        for i in range(1, tri.NbNodes() + 1):
+            p = tri.Node(i); p.Transform(trsf)
+            x1=min(x1,p.X()); x2=max(x2,p.X())
+            y1=min(y1,p.Y()); y2=max(y2,p.Y())
+            z1=min(z1,p.Z()); z2=max(z2,p.Z())
+        exp.Next()
+
     span = max(x2 - x1, y2 - y1, z2 - z1) * 1.05
     step = span / R
     ox = x1 - (span - (x2 - x1)) / 2
